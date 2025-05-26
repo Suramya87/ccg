@@ -3,20 +3,34 @@ Card.__index = Card
 
 function Card.new(data)
     local self = setmetatable({}, Card)
-    self.name = data.name or "Unnamed"
-    self.cost = tonumber(data.cost) or 0
-    self.power = tonumber(data.power) or 0
-    self.text = data.text or ""
-    -- Load card image or set default here if needed
+    self.name = data.name
+    self.cost = data.cost
+    self.power = data.power
+    self.text = data.text
+    self.width = 60
+    self.height = 90
+    self.x = 0
+    self.y = 0
     return self
 end
 
+function Card:contains(x, y)
+    return x >= self.x and x <= self.x + self.width and
+           y >= self.y and y <= self.y + self.height
+end
+
 function Card:draw(x, y)
-    -- Draw the card visually; for now, just print its name
-    love.graphics.rectangle("line", x, y, 100, 150)
-    love.graphics.print(self.name, x + 10, y + 10)
-    love.graphics.print("Cost: " .. self.cost, x + 10, y + 30)
-    love.graphics.print("Power: " .. self.power, x + 10, y + 50)
+    local drawX = x or self.x
+    local drawY = y or self.y
+
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.rectangle("fill", drawX, drawY, self.width, self.height)
+    love.graphics.setColor(0, 0, 0)
+    love.graphics.rectangle("line", drawX, drawY, self.width, self.height)
+    love.graphics.print(self.name, drawX + 4, drawY + 4)
+    love.graphics.print("Cost: " .. self.cost, drawX + 4, drawY + 20)
+    love.graphics.print("Pwr: " .. self.power, drawX + 4, drawY + 35)
+    love.graphics.setColor(1, 1, 1)
 end
 
 return Card

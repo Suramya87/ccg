@@ -20,14 +20,16 @@ end
 
 function Player:drawCard()
     if #self.deck > 0 then
-        local card = table.remove(self.deck, 1)
+        local card = table.remove(self.deck)
         table.insert(self.hand, card)
     end
 end
 
 function Player:drawHand()
     for i, card in ipairs(self.hand) do
-        card:draw(100 + (i - 1) * 120, self.isAI and 50 or 400)
+        local x = 100 + (i - 1) * 120
+        local y = self.isAI and 50 or 400
+        card:draw(x, y)
     end
 end
 

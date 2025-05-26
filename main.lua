@@ -13,9 +13,13 @@ function love.draw()
 end
 
 function love.mousepressed(x, y, button)
-    GameState:mousepressed(x, y, button)
+    GameState:mousePressed(x, y, button)
+end
+
+function love.mousemoved(x, y, dx, dy)
+    GameState:mouseMoved(x, y)
 end
 
 function love.mousereleased(x, y, button)
-    GameState:mousereleased(x, y, button)
+    GameState:mouseReleased(x, y, button)
 end
