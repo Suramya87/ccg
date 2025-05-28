@@ -20,17 +20,20 @@ function Card:contains(x, y)
 end
 
 function Card:draw(x, y)
-    local drawX = x or self.x
-    local drawY = y or self.y
+    if x and y then
+        self.x = x
+        self.y = y
+    end
 
     love.graphics.setColor(1, 1, 1)
-    love.graphics.rectangle("fill", drawX, drawY, self.width, self.height)
+    love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
     love.graphics.setColor(0, 0, 0)
-    love.graphics.rectangle("line", drawX, drawY, self.width, self.height)
-    love.graphics.print(self.name, drawX + 4, drawY + 4)
-    love.graphics.print("Cost: " .. self.cost, drawX + 4, drawY + 20)
-    love.graphics.print("Pwr: " .. self.power, drawX + 4, drawY + 35)
+    love.graphics.rectangle("line", self.x, self.y, self.width, self.height)
+    love.graphics.print(self.name, self.x + 4, self.y + 4)
+    love.graphics.print("Cost: " .. self.cost, self.x + 4, self.y + 20)
+    love.graphics.print("Pwr: " .. self.power, self.x + 4, self.y + 35)
     love.graphics.setColor(1, 1, 1)
 end
+
 
 return Card

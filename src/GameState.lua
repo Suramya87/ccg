@@ -2,7 +2,8 @@ local GameState = {}
 local Game = require("src.Game")
 local Card = require("src.Card")
 local Board = require("src.Board")
---local Deck = require("src.Deck")
+
+local MAX_HAND_SIZE = 5
 
 local function loadCSV(filename)
     local cards = {}
@@ -12,7 +13,7 @@ local function loadCSV(filename)
     local firstLine = true
     for line in string.gmatch(file, "[^\r\n]+") do
         if firstLine then
-            firstLine = false -- Skip the header row
+            firstLine = false -- Skip header
         else
             local fields = {}
             for value in string.gmatch(line, '([^,]+)') do
@@ -41,8 +42,16 @@ function GameState:load()
     self.board = Board.new()
     self.discardPile = {}
 
+    self.draggingCard = nil
+    self.dragOffsetX = 0
+    self.dragOffsetY = 0
+
+    -- Draw initial hands
     self.game.player.hand = self:drawCards(3)
+    self:updateHandPositions(self.game.player.hand, self.game.player.isAI)
+
     self.game.enemy.hand = self:drawCards(3)
+    self:updateHandPositions(self.game.enemy.hand, self.game.enemy.isAI)
 end
 
 function GameState:shuffleCards(cardTable)
@@ -62,6 +71,17 @@ function GameState:drawCards(count)
     return drawnCards
 end
 
+function GameState:updateHandPositions(hand, isAI)
+    local startX = 100
+    local y = isAI and 50 or 400
+    local spacing = 120
+
+    for i, card in ipairs(hand) do
+        card.x = startX + (i - 1) * spacing
+        card.y = y
+    end
+end
+
 function GameState:update(dt)
     self.game:update(dt)
 end
@@ -71,8 +91,12 @@ function GameState:draw()
     self.game.player:drawHand()
     self.game.enemy:drawHand()
 
+    if self.draggingCard then
+        self.draggingCard:draw()
+    end
+
     love.graphics.rectangle("line", 50, 300, 60, 90)
-    -- love.graphics.print("Deck (" .. #self.deck.cards .. ")", 55, 320)
+    love.graphics.print("Deck (" .. #self.allCards .. ")", 55, 320)
 
     love.graphics.rectangle("line", 50, 400, 60, 90)
     love.graphics.print("Discard (" .. #self.discardPile .. ")", 55, 420)
@@ -80,15 +104,21 @@ end
 
 function GameState:mousePressed(x, y, button)
     if button == 1 then
+        -- Click on deck to draw card only if hand not full
         if x >= 50 and x <= 110 and y >= 300 and y <= 390 then
-            local drawn = self:drawCards(1)
-            for _, card in ipairs(drawn) do
-                table.insert(self.game.player.hand, card)
+            if #self.game.player.hand < MAX_HAND_SIZE then
+                local drawn = self:drawCards(1)
+                for _, card in ipairs(drawn) do
+                    table.insert(self.game.player.hand, card)
+                end
+                self:updateHandPositions(self.game.player.hand, self.game.player.isAI)
             end
             return
         end
 
-        for i, card in ipairs(self.game.player.hand) do
+        -- Check if clicking on player's card to drag
+        for i = #self.game.player.hand, 1, -1 do
+            local card = self.game.player.hand[i]
             if card:contains(x, y) then
                 self.draggingCard = card
                 self.dragOffsetX = x - card.x
@@ -109,24 +139,32 @@ end
 function GameState:mouseReleased(x, y, button)
     if self.draggingCard then
         local targetSlot = self.board:getHoveredSlot(x, y)
+        local placed = false
+
         if targetSlot then
             local loc = self.board.locations[targetSlot.location]
-            if not loc.playerSlots[targetSlot.slotIndex] and self.game.player.mana >= self.draggingCard.cost then
-                loc.playerSlots[targetSlot.slotIndex] = self.draggingCard
-                self.game.player.mana = self.game.player.mana - self.draggingCard.cost
+            local slotIndex = targetSlot.slotIndex
 
-                for i, c in ipairs(self.game.player.hand) do
-                    if c == self.draggingCard then
-                        table.remove(self.game.player.hand, i)
-                        break
-                    end
-                end
-            else
-                table.insert(self.discardPile, self.draggingCard)
+            if not loc.playerSlots[slotIndex] and self.game.player.mana >= self.draggingCard.cost then
+                loc.playerSlots[slotIndex] = self.draggingCard
+                self.game.player.mana = self.game.player.mana - self.draggingCard.cost
+                placed = true
             end
-        else
+        end
+
+        -- Remove card from hand regardless of outcome
+        for i, c in ipairs(self.game.player.hand) do
+            if c == self.draggingCard then
+                table.remove(self.game.player.hand, i)
+                break
+            end
+        end
+
+        if not placed then
             table.insert(self.discardPile, self.draggingCard)
         end
+
+        self:updateHandPositions(self.game.player.hand, self.game.player.isAI)
         self.draggingCard = nil
     end
 end
